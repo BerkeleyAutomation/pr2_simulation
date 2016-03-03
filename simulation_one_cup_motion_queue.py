@@ -31,11 +31,11 @@ TARGET_GREEN = [0.6, -0.405, 0.80]
 ALIGN_GRASP_GREEN = [0.7, -0.405, 0.80]
 RAISED_GREEN = [0.7, -0.405, 1.0]
 RAISED_DEST_GREEN = [0.7, 0.0, 1.0]
-DEST_GREEN = [0.7, 0.0, 0.81]
+DEST_GREEN = [0.7, 0.0, 0.82]
 DEST_GREEN_REMOVED = [0.45, 0.0, 1.0]
 
 '''OUTPUT FILE TO WRITE TO'''
-FILENAME = '/home/simon/output.txt'
+FILENAME = '/home/animesh/simon/output.txt'
 FILE = None
 
 
@@ -57,7 +57,7 @@ class SimpleArmState:
     self.currentGoal = newGoalPosition
 
 
-  def isGoalState(self, acceptableAbsError = 0.1):
+  def isGoalState(self, acceptableAbsError = 0.075):
     ''' Returns true when goal state is reached
       by default always returns true
     '''
@@ -101,12 +101,14 @@ class SimpleArmState:
   def grasp(self):
     self.rightArm.close_gripper()
     print "Closing Gripper..."
-    rospy.sleep(2)
+    rospy.sleep(15)
 
   def release(self):
     self.rightArm.open_gripper()
     print "Opening Gripper..."
-    rospy.sleep(10)
+    rospy.sleep(7)
+    self.rightArm.open_gripper()
+    rospy.sleep(7)
 
 
   def clear_arms(self):
