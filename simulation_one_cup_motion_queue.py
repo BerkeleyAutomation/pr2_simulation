@@ -1,5 +1,6 @@
 import arm
 import planner
+import threading
 
 import numpy as np
 
@@ -20,6 +21,8 @@ import tfx
 import tf.transformations as tft
 
 import openravepy as rave
+
+import joint_states_listener_right
 
 '''EXPLICIT LOCATIONS USED'''
 RED = [0.701716, 0.400784, 0.83095]
@@ -221,14 +224,19 @@ class queuePlanner():
 
 
 def main():
-  global FILE
-  FILE = open(FILENAME, 'w')
+  # global FILE
+  # FILE = open(FILENAME, 'w')
 
   goalPositions = ["CLEAR", TARGET_GREEN, ALIGN_GRASP_GREEN, "GRASP", RAISED_GREEN, RAISED_DEST_GREEN, DEST_GREEN, "RELEASE", DEST_GREEN_REMOVED, "CLEAR"]
   qPlan = queuePlanner(goalPositions)
+  e = threading.Event()
+  e.clear()
+  thread = threading.Thread(target = joint_states_listener_right.record_Right_Arm_Event, args = (False,e, FILENAME))
+  thread.start()
   qPlan.run()
-
-  FILE.close()
+  e.set()
+  thread.join()
+  # FILE.close()
 
 
 def writeToOutput(data):
