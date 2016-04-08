@@ -207,13 +207,35 @@ class Arm:
         self.gripper_command_client.send_goal(pcm.Pr2GripperCommandGoal(pcm.Pr2GripperCommand(position=grasp,max_effort=max_effort)))
         #self.gripper_command_pub.publish(pcm.Pr2GripperCommand(position=grasp,max_effort=max_effort))
         
-        if block:
-            timeout = utils.Timeout(10)
-            timeout.start()
-            last_grasp = self.current_grasp + 1e-4 # slight offset to trigger loop
-            while(np.abs(self.current_grasp - max(grasp,0)) > .005 and np.abs(last_grasp - self.current_grasp) > 1e-5 and not timeout.has_timed_out()):
-                last_grasp = self.current_grasp
-                rospy.sleep(0.5)
+        # if block:
+        #     timeout = utils.Timeout(10)
+        #     timeout.start()
+        #     last_grasp = self.current_grasp + 1e-4 # slight offset to trigger loop
+        #     while(np.abs(self.current_grasp - max(grasp,0)) > .005 and np.abs(last_grasp - self.current_grasp) > 1e-5 and not timeout.has_timed_out()):
+        #         last_grasp = self.current_grasp
+        #         rospy.sleep(0.5)
+
+        timeout = utils.Timeout(10)
+        timeout.start()
+        last_grasp = self.current_grasp + 1e-4 # slight offset to trigger loop
+        while True:
+            if np.abs(self.current_grasp - max(grasp,0)) > .005:
+                if np.abs(last_grasp - self.current_grasp) > 1e-8:
+                    if not timeout.has_timed_out():
+                        last_grasp = self.current_grasp
+                        rospy.sleep(0.5)
+                    else:
+                        print "TIMEOUT"
+                        rospy.sleep(1)
+                        return
+                else:
+                    print "TOO SLOW"
+                    rospy.sleep(1)
+                    return
+            else:
+                print"COMPLETED"
+                rospy.sleep(1)
+                return
         
     def teleop(self):
         rospy.loginfo('{0} arm teleop'.format(self.arm_name))

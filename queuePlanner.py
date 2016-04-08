@@ -1,6 +1,5 @@
 import arm
 import planner
-import threading
 
 import numpy as np
 
@@ -9,11 +8,11 @@ import roslib
 import actionlib
 roslib.load_manifest("pr2_controllers_msgs")
 roslib.load_manifest("move_base_msgs")
-#from pr2_controllers_msgs.msg import JointTrajectoryAction, JointTrajectoryGoal
+
 import trajectory_msgs.msg as tm
 import sensor_msgs.msg as sm
 import pr2_controllers_msgs.msg as pcm
-#import control_msgs.msg as pcm
+
 
 
 roslib.load_manifest('tfx')
@@ -22,25 +21,9 @@ import tf.transformations as tft
 
 import openravepy as rave
 
-import joint_states_listener_right
-
-'''EXPLICIT LOCATIONS USED'''
-RED = [0.701716, 0.400784, 0.83095]
-BLUE = [0.701716, 0.000784, 0.83095]
-GREEN = [0.701716, -0.400784, 0.83095]
 RIGHT_UP = [0.5, -0.2, 1.25]
 LEFT_UP = [0.5, 0.2, 1.25]
-TARGET_GREEN = [0.6, -0.405, 0.80]
-ALIGN_GRASP_GREEN = [0.7, -0.405, 0.80]
-RAISED_GREEN = [0.7, -0.405, 1.0]
-RAISED_DEST_GREEN = [0.7, 0.0, 1.0]
-DEST_GREEN = [0.7, 0.0, 0.82]
-DEST_GREEN_REMOVED = [0.45, 0.0, 1.0]
-
-'''OUTPUT FILE TO WRITE TO'''
-FILENAME = '/home/simon/joint_states_out'
-# FILENAME = '/home/animesh/simon/output.txt'
-FILE = None
+MAX_FORCE = 200
 
 
 class SimpleArmState:
@@ -95,24 +78,29 @@ class SimpleArmState:
       print newPosition
       self.valid = False
     else:
-      for newRightJoints in newRightJointsList:
-        writeToOutput(newRightJoints)
       self.rightArm.execute_joint_trajectory(newRightJointsList)
       self.valid = True
     rospy.sleep(.01)
     return self # Modify to generate a valid successor states, does not update state if pose is invalid and instead reverts to last valid state
 
   def grasp(self):
-    self.rightArm.close_gripper()
+    print "Before"
+    self.rightArm.close_gripper(MAX_FORCE)
     print "Closing Gripper..."
-    rospy.sleep(15)
+    rospy.sleep(0.1)
 
   def release(self):
-    self.rightArm.open_gripper()
     print "Opening Gripper..."
-    rospy.sleep(7)
-    self.rightArm.open_gripper()
-    rospy.sleep(7)
+    self.rightArm.open_gripper(-1)
+    rightArmPose = self.rightArm.get_pose()
+    newRightArmPose = tfx.pose(rightArmPose.position, tfx.tb_angles(-0.1, -0.1, -0.1))
+    newRightJoints = self.rightArm.ik(newRightArmPose)
+    if newRightJoints is not None:
+      self.rightArm.go_to_joints(newRightJoints)
+    else:
+      rospy.loginfo('Invalid Right Arm Pose')
+      print "RIGHT RELEASE FAILED"
+    rospy.sleep(0.1)
 
 
   def clear_arms(self):
@@ -123,31 +111,31 @@ class SimpleArmState:
 
   def alignGrippers(self):
     rightArmPose = self.rightArm.get_pose()
-    leftArmPose = self.leftArm.get_pose()
-    newLeftArmPose = tfx.pose(leftArmPose.position, tfx.tb_angles(0.0, 0.0, 0.0)) # Create new pose
+    # leftArmPose = self.leftArm.get_pose()
+    # newLeftArmPose = tfx.pose(leftArmPose.position, tfx.tb_angles(0.0, 0.0, 0.0)) # Create new pose
 
     newRightArmPose = tfx.pose(rightArmPose.position, tfx.tb_angles(0.0, 0.0, 0.0))
     newRightJoints = self.rightArm.ik(newRightArmPose) # Updates arm pose if valid
-    newLeftJoints = self.leftArm.ik(newLeftArmPose)
+    # newLeftJoints = self.leftArm.ik(newLeftArmPose)
     if newRightJoints is not None:
       self.rightArm.go_to_joints(newRightJoints)
       print('new_pose: {0}'.format(newRightArmPose))
       print "Aligning right gripper..."
-      self.rightArm.open_gripper()
+      self.release()
       self.valid = True
     else:
       rospy.loginfo('Invalid Right Arm Pose')
       print "RIGHT ALIGNMENT FAILED"
       self.valid = False
       return self
-    rospy.sleep(0.5)
-    if newLeftJoints is not None:
-      self.leftArm.go_to_joints(newLeftJoints)
-      print "Aligning left gripper..."
-      self.leftArm.open_gripper()
-    else:
-      rospy.loginfo('Invalid Left Arm Pose')
-      print "LEFT ALIGNMENT FAILED"
+    # rospy.sleep(0.5)
+    # if newLeftJoints is not None:
+    #   self.leftArm.go_to_joints(newLeftJoints)
+    #   # print "Aligning left gripper..."
+    #   # self.leftArm.open_gripper(100000)
+    # else:
+    #   rospy.loginfo('Invalid Left Arm Pose')
+    #   print "LEFT ALIGNMENT FAILED"
     rospy.sleep(0.5)
 
   def raiseArms(self):
@@ -176,11 +164,16 @@ class SimpleArmState:
     rospy.sleep(.01)
     return self
 
-class queuePlanner():
+class QueuePlanner():
   ''' Class for planning motion using a simple queue of positions
   '''
-  def __init__(self, positionQueue = []):
+  def __init__(self):
+    rospy.init_node('test_arm', anonymous=True)
     self.state = SimpleArmState()
+    self.goalPositionQueue = []
+    self.index = 0
+
+  def setPositionQueue(self, positionQueue):
     self.goalPositionQueue = positionQueue
     self.index = 0
 
@@ -222,31 +215,3 @@ class queuePlanner():
   # def skipNext(self):
 
   # def setBreak(self):
-
-
-def main():
-  # global FILE
-  # FILE = open(FILENAME, 'w')
-
-  goalPositions = ["CLEAR", TARGET_GREEN, ALIGN_GRASP_GREEN, "GRASP", RAISED_GREEN, RAISED_DEST_GREEN, DEST_GREEN, "RELEASE", DEST_GREEN_REMOVED, "CLEAR"]
-  qPlan = queuePlanner(goalPositions)
-  e = threading.Event()
-  e.clear()
-  thread = threading.Thread(target = joint_states_listener_right.record_Right_Arm_Event, args = (False,e, FILENAME))
-  thread.start()
-  qPlan.run()
-  e.set()
-  thread.join()
-  # FILE.close()
-
-
-def writeToOutput(data):
-  if FILE is not None:
-    FILE.write(str(data) + '\n')
-  
-  
-
-
-if __name__ == '__main__':
-    rospy.init_node('test_arm', anonymous=True)
-    main()

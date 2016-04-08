@@ -83,7 +83,7 @@ class Recorder():
 
     def __init__(self, filename, verbose=False, joint_names = None):
         if joint_names is None:
-            self.joint_names = set(RIGHT_JOINT_NAMES)
+            self.joint_names = set(self.RIGHT_JOINT_NAMES)
         else:
             self.joint_names = joint_names
         self.filename = filename
@@ -92,10 +92,10 @@ class Recorder():
         self.thread = None
 
 
-    def set_verbose(self, bool):
+    def setVerbose(self, bool):
         self.verbose = bool;
 
-    def add_joint_names(self, names):
+    def addJointNames(self, names):
         self.joint_names = self.joint_names + set(names)
 
 
@@ -107,13 +107,13 @@ class Recorder():
 
     # def add_joint_names_left():
 
-    def start_recording(self):
+    def startRecording(self):
         self.e = threading.Event()
         self.e.clear()
         self.thread = threading.Thread(target = record_Right_Arm_Event, args = (self.verbose,self.e, self.filename, self.joint_names))
         self.thread.start()
 
-    def stop_recording(self):
+    def stopRecording(self):
         self.e.set()
         self.thread.join()
 
