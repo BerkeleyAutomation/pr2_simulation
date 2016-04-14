@@ -32,8 +32,8 @@ class SimpleArmState:
   def __init__(self):
     '''
     '''
-    self.rightArm = arm.Arm('right')
-    self.leftArm = arm.Arm('left')
+    self.rightArm = arm.Arm('right', 5.0)
+    self.leftArm = arm.Arm('left', 5.0)
     self.rightArm.sim.env.SetViewer('qtcoin')
     self.valid = True
     self.graspPlanner = planner.Planner('right')
@@ -91,7 +91,7 @@ class SimpleArmState:
 
   def release(self):
     print "Opening Gripper..."
-    self.rightArm.open_gripper(-1)
+    self.rightArm.open_gripper(MAX_FORCE)
     rightArmPose = self.rightArm.get_pose()
     newRightArmPose = tfx.pose(rightArmPose.position, tfx.tb_angles(-0.1, -0.1, -0.1))
     newRightJoints = self.rightArm.ik(newRightArmPose)

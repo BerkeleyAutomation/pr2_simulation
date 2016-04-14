@@ -46,7 +46,7 @@ class Arm:
                   }
     
     
-    def __init__(self, arm_name, sim=None, default_speed=.05):
+    def __init__(self, arm_name, default_speed=.05, sim=None):
         """
         :param arm_name: "left" or "right"
         :param sim: OpenRave simulator (or create if None)

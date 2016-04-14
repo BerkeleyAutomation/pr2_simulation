@@ -133,18 +133,18 @@
       </link>
       <static>0</static>
     </model>
-    <model name='unit_cylinder_Green'>
+    <model name='unit_object_Green'>
       <pose>2.43377 0 0.5 0 -0 0</pose>
       <link name='link'>
         <inertial>
-          <mass>0.5</mass>
+          <mass>1.0</mass>
           <inertia>
-            <ixx>0.5</ixx>
+            <ixx>1.0</ixx>
             <ixy>0</ixy>
             <ixz>0</ixz>
-            <iyy>0.5</iyy>
+            <iyy>1.0</iyy>
             <iyz>0</iyz>
-            <izz>0.5</izz>
+            <izz>1.0</izz>
           </inertia>
         </inertial>
         <collision name='collision'>
@@ -158,7 +158,10 @@
           <surface>
             <bounce/>
             <friction>
-              <ode/>
+              <ode>
+                <mu>30</mu>
+                <mu2>15</mu2>
+              </ode>
             </friction>
             <contact>
               <ode/>
@@ -211,7 +214,7 @@
           <wrench>-0.039678 -0.003789 -29.375 0 -0 0</wrench>
         </link>
       </model>
-      <model name='unit_cylinder_Green'>
+      <model name='unit_object_Green'>
         <pose>0.67192 -0.417499 0.772902 0.00242 -0.001772 -0.002873</pose>
         <link name='link'>
           <pose>0.67192 -0.417499 0.772902 0.00242 -0.001772 -0.002873</pose>
